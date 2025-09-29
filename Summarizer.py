@@ -125,6 +125,7 @@ Summarized_text = summarize_text(text)
     
 
 
-https://www.simplilearn.com/learn-power-bi-basics-free-course-skillup?tag=POWER%20BI
+
+
 
 
