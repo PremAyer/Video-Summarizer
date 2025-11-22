@@ -78,6 +78,7 @@ def download_video_from_url(url, save_dir):
             'outtmpl': file_path_template,
             'quiet': True,
             'noplaylist': True,
+            "cookiesfrombrowser": ("chrome",),
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -102,7 +103,8 @@ def download_full_video(url, save_dir):
             'merge_output_format': 'mp4',
             'outtmpl': file_template,
             'quiet': True,
-            'noplaylist': True
+            'noplaylist': True,
+            "cookiesfrombrowser": ("chrome",),
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -296,4 +298,5 @@ for index, row in comments_df.iterrows():
 
 
             
+
 
