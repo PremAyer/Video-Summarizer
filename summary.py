@@ -1,5 +1,4 @@
 import streamlit as st
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 import os
 from faster_whisper import WhisperModel
 import torch 
@@ -15,7 +14,18 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
-HF_TOKEN = os.getenv("HUGGINGFACE_ACCESS_TOKEN")
+try:
+    groq_api_key = st.secrets["GROQ_API_KEY"]
+except (FileNotFoundError, KeyError):
+    groq_api_key = os.getenv("GROQ_API_KEY")
+
+# Stop the app if the key is still missing
+if not groq_api_key:
+    st.error("🚨 Groq API Key not found! Please check your secrets.toml or .env file.")
+    st.stop()
+
+# Initialize the client with the found key
+client = Groq(api_key=groq_api_key)
 
 # --- THIS FUNCTION IS MODIFIED ---
 def transcribe_audio(audio_path, temp_dir):
@@ -140,21 +150,6 @@ def translate_text(text, source_lang):
             del translator_pipeline
             print("✅ translate_text: Cleanup complete.")
             sys.stdout.flush()
-
-
-
-try:
-    groq_api_key = st.secrets["GROQ_API_KEY"]
-except (FileNotFoundError, KeyError):
-    groq_api_key = os.getenv("GROQ_API_KEY")
-
-# Stop the app if the key is still missing
-if not groq_api_key:
-    st.error("🚨 Groq API Key not found! Please check your secrets.toml or .env file.")
-    st.stop()
-
-# Initialize the client with the found key
-client = Groq(api_key=groq_api_key)
 
 
 def summarize_text(text, source_lang="en"):
@@ -333,4 +328,5 @@ def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
     final_clip = concatenate_videoclips(clips)
     final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     return output_path
+
 
