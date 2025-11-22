@@ -5,6 +5,7 @@ sentencepiece
 torch
 faster-whisper
 groq
+python-dotenv
 elevenlabs
 moviepy==1.0.3
 pillow
@@ -21,6 +22,7 @@ tqdm
 nltk
 rouge-score
 bert-score
+
 
 
 
