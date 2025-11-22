@@ -12,6 +12,7 @@ from PIL import Image
 import numpy as np
 from dotenv import load_dotenv
 
+os.environ["STREAMLIT_WATCHDOG"] = "false"
 
 load_dotenv()
 try:
@@ -328,5 +329,6 @@ def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
     final_clip = concatenate_videoclips(clips)
     final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     return output_path
+
 
 
