@@ -1,5 +1,4 @@
 import streamlit as st
-from gtts import gTTS
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from dotenv import load_dotenv
 import os
@@ -324,3 +323,4 @@ def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
     final_clip = concatenate_videoclips(clips)
     final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     return output_path
+
