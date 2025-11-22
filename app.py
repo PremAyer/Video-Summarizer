@@ -75,17 +75,10 @@ def download_video_from_url(url, save_dir):
 
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
-             "extractor_args": {
-                "youtube": {
-                    "player_client": "default"
+            'outtmpl': file_path_template,
+            'quiet': True,
+            'noplaylist': True,
         }
-    }
- }
-      
-        #     'outtmpl': file_path_template,
-        #     'quiet': True,
-        #     'noplaylist': True,
-        # }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
