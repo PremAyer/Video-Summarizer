@@ -12,7 +12,7 @@ pillow
 numpy
 scenedetect
 pydub
-yt-dlp
+yt-dlp @ git+https://github.com/yt-dlp/yt-dlp.git@master
 requests
 ffmpeg-python
 huggingface-hub
@@ -23,6 +23,7 @@ rouge-score
 bert-score
 opencv-python-headless
 nodejs-bin
+
 
 
 
