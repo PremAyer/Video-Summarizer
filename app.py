@@ -1,10 +1,12 @@
 import streamlit as st
-import os
 import tempfile  # <-- Import tempfile
 import atexit      # <-- Import atexit for cleanup
 import shutil      # <-- Import shutil to remove directories
 import yt_dlp
 import pandas as pd
+import os
+os.environ["STREAMLIT_DISABLE_FILE_WATCHER"] = "true"
+
 
 # Import functions from your custom modules
 from summary import (
@@ -301,3 +303,4 @@ for index, row in comments_df.iterrows():
 
 
             
+
