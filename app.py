@@ -73,10 +73,17 @@ def download_video_from_url(url, save_dir):
 
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
-            'outtmpl': file_path_template,
-            'quiet': True,
-            'noplaylist': True,
+             "extractor_args": {
+                "youtube": {
+                    "player_client": "default"
         }
+    }
+ }
+      
+        #     'outtmpl': file_path_template,
+        #     'quiet': True,
+        #     'noplaylist': True,
+        # }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -291,5 +298,6 @@ comments_df = pd.read_csv(COMMENTS_FILE)
 
 for index, row in comments_df.iterrows():
     st.info(f"**{row['Name']}** says:\n\n{row['Comment']}")
+
 
             
