@@ -1,15 +1,17 @@
 import streamlit as st
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 import os
 from faster_whisper import WhisperModel
 import torch 
 from transformers import pipeline 
 import sys 
-from dotenv import load_dotenv
 from elevenlabs import save
+from groq import Groq
 from elevenlabs.client import ElevenLabs
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
 from PIL import Image
 import numpy as np
+from dotenv import load_dotenv
 
 
 load_dotenv()
@@ -141,10 +143,19 @@ def translate_text(text, source_lang):
 
 
 
+try:
+    groq_api_key = st.secrets["GROQ_API_KEY"]
+except (FileNotFoundError, KeyError):
+    groq_api_key = os.getenv("GROQ_API_KEY")
 
-from groq import Groq
+# Stop the app if the key is still missing
+if not groq_api_key:
+    st.error("🚨 Groq API Key not found! Please check your secrets.toml or .env file.")
+    st.stop()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Initialize the client with the found key
+client = Groq(api_key=groq_api_key)
+
 
 def summarize_text(text, source_lang="en"):
     """
@@ -322,6 +333,4 @@ def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
     final_clip = concatenate_videoclips(clips)
     final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     return output_path
-
-
 
