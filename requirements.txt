@@ -6,7 +6,7 @@ torch
 faster-whisper
 groq
 elevenlabs
-moviepy
+moviepy==1.0.3
 pillow
 numpy
 scenedetect
@@ -21,6 +21,7 @@ tqdm
 nltk
 rouge-score
 bert-score
+
 
 
 
