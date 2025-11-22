@@ -22,6 +22,9 @@ nltk
 rouge-score
 bert-score
 opencv-python-headless
+nodejs-bin
+
+
 
 
 
