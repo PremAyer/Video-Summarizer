@@ -4,6 +4,7 @@ from faster_whisper import WhisperModel
 import torch 
 from transformers import pipeline 
 import sys 
+from dotenv import load_dotenv
 from elevenlabs import save
 from elevenlabs.client import ElevenLabs
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
@@ -321,5 +322,6 @@ def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
     final_clip = concatenate_videoclips(clips)
     final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     return output_path
+
 
 
