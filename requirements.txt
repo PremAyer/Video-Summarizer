@@ -21,6 +21,8 @@ tqdm
 nltk
 rouge-score
 bert-score
+opencv-python-headless
+
 
 
 
