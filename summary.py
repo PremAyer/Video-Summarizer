@@ -38,7 +38,7 @@ def transcribe_audio(audio_path, temp_dir):
 
         download_path = os.path.join(os.getcwd(), "models_cache")
         os.makedirs(download_path, exist_ok=True)
-        model = WhisperModel("medium", device="cpu",download_root=download_path)
+        model = WhisperModel("small", device="cpu",compute_type="int8,"download_root=download_path)
         
         print(f"✅ Transcribing file: {audio_path}")
         sys.stdout.flush()
@@ -329,6 +329,7 @@ def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
     final_clip = concatenate_videoclips(clips)
     final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
     return output_path
+
 
 
 
