@@ -48,9 +48,12 @@ def download_video_from_url(url, save_dir):
             'outtmpl': file_path_template,
             'quiet': True,
             'noplaylist': True,
-            'cookiefile': 'youtube_cookies.txt',  # <--- MUST MATCH FILE NAME
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'referer': 'https://www.youtube.com/',
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'ios']
+                }
+            },
+            'user_agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -76,9 +79,13 @@ def download_full_video(url, save_dir):
             'outtmpl': file_template,
             'quiet': True,
             'noplaylist': True,
-            'cookiefile': 'youtube_cookies.txt', # <--- MUST MATCH FILE NAME
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'referer': 'https://www.youtube.com/',
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'ios']
+                }
+            },
+            'user_agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',    
+            
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -183,3 +190,4 @@ with st.form("comment_form"):
 comments_df = pd.read_csv(COMMENTS_FILE)
 for i, row in comments_df.iterrows():
     st.info(f"**{row['Name']}**: {row['Comment']}")
+
