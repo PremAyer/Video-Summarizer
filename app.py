@@ -167,4 +167,19 @@ if video_url:
                 if full_video_path is None:
                     st.stop()
 
-                progress.progr
+                progress.progress(40, "Detecting scenes...")
+                scenes = detect_scenes_fast(full_video_path)
+                if not scenes:
+                    st.error("⚠ No scenes detected, try different video")
+                    st.stop()
+
+                progress.progress(65, "Selecting key scenes...")
+                key_scenes = select_key_scenes(scenes, max_scenes=5)
+
+                progress.progress(90, "Generating summary video...")
+                output_video = os.path.join(temp_dir, "video_summary.mp4")
+                final_path = create_video_summary_ffmpeg(full_video_path, key_scenes, output_video)
+
+                progress.progress(100, "Done 🎉")
+                st.video(final_path)
+                st.success("Video Summary Created Successfully!")
