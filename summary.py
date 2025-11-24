@@ -1,5 +1,4 @@
 import streamlit as st
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 import os
 from faster_whisper import WhisperModel
 import torch 
@@ -368,6 +367,7 @@ def summarize_video(video_path, output="summary_video.mp4"):
     scenes = detect_scenes_fast(video_path)
     key_scenes = select_key_scenes(scenes)
     return create_video_summary_ffmpeg(video_path, key_scenes, output)
+
 
 
 
