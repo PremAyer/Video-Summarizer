@@ -48,6 +48,7 @@ def download_video_from_url(url, save_dir, cookies_path=None):
 
         if cookies_path:
             ydl_opts["cookies"] = cookies_path
+            ydl_opts["cookiesfrombrowser"] = ("chrome",)
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -76,6 +77,7 @@ def download_full_video(url, save_dir, cookies_path=None):
 
         if cookies_path:
             ydl_opts["cookies"] = cookies_path
+            ydl_opts["cookiesfrombrowser"] = ("chrome",)
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -183,3 +185,4 @@ if video_url:
                 progress.progress(100, "Done 🎉")
                 st.video(final_path)
                 st.success("Video Summary Created Successfully!")
+
