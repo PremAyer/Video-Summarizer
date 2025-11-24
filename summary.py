@@ -1,4 +1,5 @@
 import streamlit as st
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 import os
 from faster_whisper import WhisperModel
 import torch 
@@ -10,65 +11,57 @@ from elevenlabs.client import ElevenLabs
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
 from PIL import Image
 import numpy as np
+import subprocess
+import re
 from dotenv import load_dotenv
 
-os.environ["STREAMLIT_WATCHDOG"] = "false"
 
 load_dotenv()
-try:
-    groq_api_key = st.secrets["GROQ_API_KEY"]
-except (FileNotFoundError, KeyError):
-    groq_api_key = os.getenv("GROQ_API_KEY")
+HF_TOKEN = os.getenv("HUGGINGFACE_ACCESS_TOKEN")
 
-# Stop the app if the key is still missing
-if not groq_api_key:
-    st.error("🚨 Groq API Key not found! Please check your secrets.toml or .env file.")
-    st.stop()
 
-# Initialize the client with the found key
-client = Groq(api_key=groq_api_key)
+# ---- Load model only once ----
+@st.cache_resource
+def load_whisper_model():
+    download_path = os.path.join(os.getcwd(), "models_cache")
+    os.makedirs(download_path, exist_ok=True)
 
-# --- THIS FUNCTION IS MODIFIED ---
+    print("🔄 Loading Whisper Model... (only once)")
+    model = WhisperModel("tiny", device="cpu", compute_type="int8",
+                         download_root=download_path)
+    return model
+
+
 def transcribe_audio(audio_path, temp_dir):
     """
     Transcribes a given audio file using faster-whisper.
     """
-    model = None 
     try:
+        model = load_whisper_model()  
 
-        download_path = os.path.join(os.getcwd(), "models_cache")
-        os.makedirs(download_path, exist_ok=True)
-        model = WhisperModel("small", device="cpu",compute_type="int8",download_root=download_path)
-        
-        print(f"✅ Transcribing file: {audio_path}")
+        print(f"🎤 Transcribing file: {audio_path}")
         sys.stdout.flush()
 
         segments, info = model.transcribe(
             audio_path,
+            beam_size=5,
             word_timestamps=False
         )
-        
+
         result_text = " ".join([segment.text for segment in segments])
 
-        print(f"✅ Transcription complete. Detected language: {info.language}")
+        print(f"🏁 Transcription complete. Detected language: {info.language}")
         sys.stdout.flush()
-        
-        transcript = f" \nTHE TRANSCRIPT IS: \n\n{result_text.strip()}"
-        
+
+        transcript = f"\nTHE TRANSCRIPT IS:\n\n{result_text.strip()}"
+        return transcript, info.language
+
     except Exception as e:
-        print(f"⚠️ Error during transcription: {e}")
+        print(f"❌ Error during transcription: {e}")
         sys.stdout.flush()
         return None, None
-    finally:
-        # --- FIX: REMOVED torch.cuda.empty_cache() ---
-        if model:
-            print("✅ transcribe_audio: Cleaning up Whisper model...") # <-- THIS IS THE NEW PRINT
-            sys.stdout.flush()
-            del model
-            print("✅ transcribe_audio: Whisper model cleanup complete.")
-            sys.stdout.flush()
-            
-    return transcript, info.language
+
+
 
 
 # --- THIS IS THE UPDATED FUNCTION ---
@@ -84,17 +77,15 @@ def translate_text(text, source_lang):
     print(f"✅ translate_text: Starting translation from '{source_lang}' to 'en'...")
     st.info(f"1b/3 - Translating text from '{source_lang}' to 'en'...")
     
-    # --- THIS IS THE FIX ---
-    # We are forcing 'cpu' to avoid VRAM conflicts.
+
     device = "cpu"
     print(f"✅ translate_text: Forcing device '{device}' to ensure stability.")
     st.warning("Translation is running on CPU to prevent crashes. This step may be slow...")
-    # --- END OF FIX ---
 
     sys.stdout.flush()
     
     translator_pipeline = None
-    model_name = "facebook/m2m100_418M"
+    model_name = "Helsinki-NLP/opus-mt-hi-en"
 
     try:
         print(f"✅ translate_text: Attempting to load model '{model_name}' onto device '{device}'...")
@@ -103,7 +94,7 @@ def translate_text(text, source_lang):
         translator_pipeline = pipeline(
             "translation",
             model=model_name,
-            device=device  # This will now correctly be "cpu"
+            device=device  
         )
         
         print(f"✅ translate_text: Model loaded successfully onto '{device}'.")
@@ -114,8 +105,9 @@ def translate_text(text, source_lang):
         sys.stdout.flush()
         st.error(f"Failed to load translation model: {e}")
         return None
+    
 
-    # --- IF MODEL LOADED, PROCEED ---
+    # IF MODEL LOADED, PROCEED 
     try:
         max_chunk_size = 400 
         words = clean_text.split()
@@ -152,6 +144,9 @@ def translate_text(text, source_lang):
             print("✅ translate_text: Cleanup complete.")
             sys.stdout.flush()
 
+    
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 
 def summarize_text(text, source_lang="en"):
     """
@@ -185,13 +180,15 @@ def summarize_text(text, source_lang="en"):
     sys.stdout.flush()
 
     # ------- SPLIT INTO CHUNKS -------
-    max_chunk_size = 1500
+    max_chunk_size = 500
     words = text_to_summarize.split()
     chunks = [" ".join(words[i:i + max_chunk_size]) for i in range(0, len(words), max_chunk_size)]
 
     summaries = []
 
-    # ------- GROQ SUMMARIZATION REQUEST -------
+
+    # GROQ SUMMARIZATION REQUEST (Text Section)
+
     for idx, chunk in enumerate(chunks, 1):
         summary_prompt = f"""
         You are a professional summarizer. Your job is to summarize the given transcript.
@@ -249,7 +246,7 @@ def summarize_text(text, source_lang="en"):
     return summaries[0]
 
 
-
+# Audio Section
 
 def text_to_audio(text, audio_path):
     """
@@ -262,12 +259,7 @@ def text_to_audio(text, audio_path):
     try:
         api_key = "sk_e86cfb4b60786fefc126afd8567c0e5bb227e3f7e60568fd" 
 
-        # if api_key == "YOUR_API_KEY_GOES_HERE":
-        #     st.error("Please insert your ElevenLabs API Key in the code!")
-        #     return False
-
-        # Cleaning: We remove asterisks (*) but KEEP periods (.) so the AI pauses correctly.
-        clean_summary = text.replace("*", "").replace(".", "").strip().replace("\n\n", "\n")
+        clean_summary = text.replace(".", "").strip().replace("\n\n", "\n")
 
         client = ElevenLabs(api_key=api_key)
 
@@ -289,46 +281,93 @@ def text_to_audio(text, audio_path):
         sys.stdout.flush()
         st.error(f"Error during Text-to-Speech conversion: {e}")
         return False
-    
 
 
-# ================= VIDEO SUMMARIZATION =====================
-from scenedetect import SceneManager, open_video
-from scenedetect.detectors import ContentDetector
-from moviepy.editor import VideoFileClip, concatenate_videoclips
 
-def detect_scenes(video_path):
+# FAST SCENE DETECTION USING FFMPEG (Video Section)
+
+def detect_scenes_fast(video_path, threshold=0.4):
     """
-    Detects scene boundaries using latest PySceneDetect API.
+    Detects scene boundaries using FFmpeg's built-in scene change detector.
     Returns list of (start_seconds, end_seconds)
     """
-    video = open_video(video_path)
-    scene_manager = SceneManager()
-    scene_manager.add_detector(ContentDetector(threshold=27.0))
+    cmd = [
+        "ffmpeg",
+        "-i", video_path,
+        "-filter_complex", f"select='gt(scene,{threshold})',showinfo",
+        "-f", "null", "-"
+    ]
 
-    scene_manager.detect_scenes(video)
-    scenes = scene_manager.get_scene_list()
+    print("⏳ Detecting scenes...", flush=True)
+    output = subprocess.run(cmd, stderr=subprocess.PIPE, text=True).stderr
 
-    if len(scenes) == 0:
-        return [(0, 60)]  # fallback: first 60 seconds
+    timestamps = re.findall(r"pts_time:(\d+\.\d+)", output)
 
-    return [(start.get_seconds(), end.get_seconds()) for start, end in scenes]
+    if not timestamps:
+        print("⚠ No scenes detected. Returning default 60 sec window.")
+        return [(0, 60)]
 
+    scenes = []
+    prev = 0.0
+
+    for ts in timestamps:
+        ts = float(ts)
+        scenes.append((prev, ts))
+        prev = ts
+
+    return scenes
+
+
+
+# PICK TOP N LONGEST SCENES
 
 def select_key_scenes(scenes, max_scenes=5):
+    print(f"🎯 Selecting top {max_scenes} important scenes...", flush=True)
     return sorted(scenes, key=lambda x: x[1] - x[0], reverse=True)[:max_scenes]
 
 
-def create_video_summary(video_path, scenes, output_path="summary_video.mp4"):
-    video = VideoFileClip(video_path)
 
-    clips = []
-    for start, end in scenes:
-        clips.append(video.subclip(start, min(end, start + 10)))
+# SUPER-FAST VIDEO SUMMARY WITH FFMPEG CONCAT + COPY
 
-    final_clip = concatenate_videoclips(clips)
-    final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+def create_video_summary_ffmpeg(video_path, scenes, output_path="summary_video.mp4"):
+    print("✂ Creating summary video clips...", flush=True)
+
+    temp_list = "clips.txt"
+    with open(temp_list, "w") as f:
+        for i, (start, end) in enumerate(scenes):
+            clip_path = f"clip{i}.mp4"
+            subprocess.run([
+                "ffmpeg", "-y",
+                "-ss", str(start),
+                "-to", str(end),
+                "-i", video_path,
+                "-c", "copy",      # No re-encoding = super fast
+                clip_path
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            f.write(f"file '{clip_path}'\n")
+
+    print("🔗 Merging clips...", flush=True)
+    subprocess.run([
+        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", temp_list,
+        "-c", "copy", output_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Cleanup temporary files
+    for i in range(len(scenes)):
+        os.remove(f"clip{i}.mp4")
+    os.remove(temp_list)
+
+    print(f"🎉 Summary video saved as: {output_path}")
     return output_path
+
+
+# MAIN PIPELINE CALL EXAMPLE
+
+def summarize_video(video_path, output="summary_video.mp4"):
+    scenes = detect_scenes_fast(video_path)
+    key_scenes = select_key_scenes(scenes)
+    return create_video_summary_ffmpeg(video_path, key_scenes, output)
 
 
 
